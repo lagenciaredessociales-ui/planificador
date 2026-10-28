@@ -42,7 +42,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .card{background:#fff;border:1px solid #e5e5e0;border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:14px}
 .card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .card-t{font-size:13px;font-weight:700}
-.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
 .metric{background:#fff;border:1px solid #e5e5e0;border-radius:10px;padding:1rem 1.1rem}
 .m-lbl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;font-weight:700}
 .m-val{font-size:24px;font-weight:800}
@@ -141,6 +141,7 @@ tr:hover td{background:#f9f9f7;cursor:pointer}
       <div class="tab" onclick="goTab('calendario',this)">Calendario</div>
       <div class="tab" onclick="goTab('alertas',this)">Alertas</div>
       <div class="tab" onclick="goTab('recibos',this)">🧾 Recibos</div>
+      <div class="tab" onclick="goTab('rentabilidad',this)">💰 Rentabilidad</div>
     </div>
   </div>
   <div class="tab-wrap">
@@ -149,6 +150,7 @@ tr:hover td{background:#f9f9f7;cursor:pointer}
     <div id="panel-calendario" class="panel"></div>
     <div id="panel-alertas" class="panel"></div>
     <div id="panel-recibos" class="panel"></div>
+    <div id="panel-rentabilidad" class="panel"></div>
   </div>
 </div>
 </div>
@@ -304,8 +306,123 @@ if(sessionStorage.getItem('a')==='1'){document.getElementById('auth').style.disp
 function startFB(){
   db.collection('clientes').onSnapshot(s=>{
     D.clients=s.docs.map(d=>({id:d.id,...d.data()}));
+    if(!s.metadata.fromCache)syncBase();
     render();
   },err=>{console.error(err);toast('Error Firebase: '+err.message);});
+}
+
+// CLIENTES BASE (lista oficial con fee y día de corte)
+var CLIENTES_BASE = [
+  {k:['nido'], nombre:'Nido Inmobiliaria', tipo:'servicios', monto:600000, corte:1},
+  {k:['cositas'], nombre:'Las Cositas de las Uñas', tipo:'pyme', monto:1500000, corte:10},
+  {k:['refugio'], nombre:'Hotel Refugio Natural Guarne', tipo:'hoteleria', monto:1800000, corte:1},
+  {k:['opensea'], nombre:'Hotel Open Sea Cartagena', tipo:'hoteleria', monto:1800000, corte:1},
+  {k:['mana'], nombre:'Maná Calzado', tipo:'ecommerce', monto:3700000, corte:15},
+  {k:['kakigori'], nombre:'Kakigori', tipo:'pyme', monto:1800000, corte:28},
+  {k:['jatry','hatri'], nombre:'Jatry', tipo:'ecommerce', monto:2500000, corte:22},
+  {k:['picardias'], nombre:'Picardías Creciendo', tipo:'ecommerce', monto:1500000, corte:1},
+  {k:['mystic','mystik'], nombre:'Mystik', tipo:'ecommerce', monto:1800000, corte:1},
+  {k:['colonial'], nombre:'Casa Colonial', tipo:'pyme', monto:1200000, corte:1},
+  {k:['moove','move'], nombre:'Moove', tipo:'servicios', monto:1250000, corte:1},
+  {k:['malu'], nombre:'Malú', tipo:'ecommerce', monto:2500000, corte:10}
+];
+// GASTOS MENSUALES (hoy y diciembre con el aumento de Juan Camilo)
+var GASTOS = [
+  {c:'Mafe · gerente de cuentas', hoy:2000000, dic:2000000, nom:true},
+  {c:'Juan Camilo · trafficker', hoy:2500000, dic:3500000, nom:true},
+  {c:'Carla · asesora de WhatsApp', hoy:1200000, dic:1200000, nom:true},
+  {c:'Adri · filmmaker y editora', hoy:2500000, dic:2500000, nom:true},
+  {c:'Carlos · revenue', hoy:800000, dic:800000, nom:true},
+  {c:'ChatGPT', hoy:100000, dic:100000},
+  {c:'CapCut', hoy:100000, dic:100000},
+  {c:'Claude (2 cuentas)', hoy:200000, dic:200000},
+  {c:'Transporte', hoy:1000000, dic:1000000}
+];
+// META: clientes nuevos a conseguir hasta el 30 de noviembre de 2026
+var META_NUEVOS = [{g:'Clientes de $1.800.000', n:4, fee:1800000},{g:'Clientes de $2.500.000', n:3, fee:2500000}];
+
+function normTxt(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+var baseSynced=false;
+function syncBase(){
+  if(baseSynced)return;
+  baseSynced=true;
+  const used=new Set();
+  const ops=[];
+  CLIENTES_BASE.forEach(b=>{
+    const m=D.clients.find(c=>!used.has(c.id)&&b.k.some(k=>normTxt(c.nombre).includes(k)));
+    if(m){
+      used.add(m.id);
+      const upd={};
+      if(+m.monto!==b.monto)upd.monto=b.monto;
+      if(+m.corte!==b.corte){upd.corte=b.corte;if(!m.pago||+m.pago===+m.corte)upd.pago=b.corte;}
+      if(Object.keys(upd).length)ops.push(db.collection('clientes').doc(m.id).update(upd));
+    } else {
+      ops.push(db.collection('clientes').add({nombre:b.nombre,tipo:b.tipo,monto:b.monto,corte:b.corte,pago:b.corte,estado:'activo',email:'',notas:''}));
+    }
+  });
+  if(ops.length)Promise.all(ops).then(()=>toast('Clientes actualizados ✓ ('+ops.length+' cambios)')).catch(e=>toast('Error: '+e.message));
+}
+
+function rentCalc(){
+  const cls=D.clients.filter(c=>(+c.monto||0)>0);
+  const gHoy=GASTOS.reduce((s,g)=>s+g.hoy,0), gDic=GASTOS.reduce((s,g)=>s+g.dic,0);
+  const nHoy=GASTOS.filter(g=>g.nom).reduce((s,g)=>s+g.hoy,0), nDic=GASTOS.filter(g=>g.nom).reduce((s,g)=>s+g.dic,0);
+  const ing=cls.reduce((s,c)=>s+(+c.monto||0),0);
+  const costo=cls.length?gHoy/cls.length:0;
+  const rows=cls.map(c=>{const f=+c.monto||0;return {c,fee:f,costo,u:f-costo,m:f?(f-costo)/f:0};}).sort((a,b)=>b.u-a.u);
+  const ingN=META_NUEVOS.reduce((s,x)=>s+x.n*x.fee,0), nN=META_NUEVOS.reduce((s,x)=>s+x.n,0);
+  const ingD=ing+ingN;
+  return {cls,gHoy,gDic,nHoy,nDic,ing,costo,rows,ingN,nN,ingD,netoHoy:ing-gHoy,netoDic:ingD-gDic,costoDic:(cls.length+nN)?gDic/(cls.length+nN):0};
+}
+function pctTxt(v){return (v*100).toLocaleString('es-CO',{maximumFractionDigits:1})+'%';}
+function money(v){return (v<0?'-$':'$')+fmt(Math.round(Math.abs(v)));}
+
+// RENTABILIDAD TAB
+function rRent(){
+  const r=rentCalc();
+  const col=v=>v<0?'#c0392b':'#2d6a11';
+  document.getElementById('panel-rentabilidad').innerHTML=`
+    <div style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#888;text-transform:uppercase;margin-bottom:8px">Hoy</div>
+    <div class="metrics">
+      <div class="metric"><div class="m-lbl">Ingresos al mes</div><div class="m-val" style="font-size:18px">${money(r.ing)}</div></div>
+      <div class="metric"><div class="m-lbl">Gastos al mes</div><div class="m-val" style="font-size:18px;color:#b45309">${money(r.gHoy)}</div></div>
+      <div class="metric"><div class="m-lbl">Te queda neto</div><div class="m-val" style="font-size:18px;color:${col(r.netoHoy)}">${money(r.netoHoy)}</div><div style="font-size:11px;color:#888;margin-top:2px">Margen ${r.ing?pctTxt(r.netoHoy/r.ing):'—'}</div></div>
+      <div class="metric"><div class="m-lbl">Nómina / ingresos</div><div class="m-val" style="font-size:18px">${r.ing?pctTxt(r.nHoy/r.ing):'—'}</div><div style="font-size:11px;color:#888;margin-top:2px">Nómina ${money(r.nHoy)}</div></div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-h"><span class="card-t">💰 Cuánto te deja cada cliente</span></div>
+      <p style="font-size:12px;color:#888;margin:-6px 0 12px">Los gastos se reparten por igual entre los ${r.cls.length} clientes: ${money(r.costo)} por cliente. En rojo, lo que cuesta más de lo que paga.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Cliente</th><th>Paga al mes</th><th>Costo asignado</th><th>Te deja</th><th>Margen</th></tr></thead>
+        <tbody>${r.rows.map(x=>`<tr onclick="openCliM('${x.c.id}')"><td><b>${x.c.nombre}</b></td><td>${money(x.fee)}</td><td>${money(x.costo)}</td><td style="font-weight:800;color:${col(x.u)}">${money(x.u)}</td><td style="font-weight:800;color:${col(x.u)}">${pctTxt(x.m)}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:#aaa;padding:24px">Sin clientes con monto</td></tr>'}</tbody>
+      </table></div>
+      <div class="total-bar"><span style="font-size:13px;font-weight:700;color:#666">Total neto</span><span style="font-size:18px;font-weight:900;color:${col(r.netoHoy)}">${money(r.netoHoy)}</span></div>
+    </div>
+    <div class="g2" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-h"><span class="card-t">Gastos mensuales</span></div>
+        <div class="tw"><table>
+          <thead><tr><th>Concepto</th><th>Hoy</th><th>Diciembre</th></tr></thead>
+          <tbody>${GASTOS.map(g=>`<tr><td>${g.c}</td><td>${money(g.hoy)}</td><td>${money(g.dic)}</td></tr>`).join('')}
+          <tr><td><b>Total</b></td><td><b>${money(r.gHoy)}</b></td><td><b>${money(r.gDic)}</b></td></tr></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><span class="card-t">🎯 Clientes por conseguir · hasta el 30 nov 2026</span></div>
+        <div class="tw"><table>
+          <thead><tr><th>Grupo</th><th>Cantidad</th><th>Suma al mes</th></tr></thead>
+          <tbody>${META_NUEVOS.map(x=>`<tr><td>${x.g}</td><td>${x.n}</td><td>${money(x.n*x.fee)}</td></tr>`).join('')}
+          <tr><td><b>Total</b></td><td><b>${r.nN}</b></td><td><b>${money(r.ingN)}</b></td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#888;text-transform:uppercase;margin-bottom:8px">Proyección diciembre 2026</div>
+    <div class="metrics">
+      <div class="metric"><div class="m-lbl">Ingresos al mes</div><div class="m-val" style="font-size:18px">${money(r.ingD)}</div><div style="font-size:11px;color:#888;margin-top:2px">${r.cls.length+r.nN} clientes</div></div>
+      <div class="metric"><div class="m-lbl">Gastos al mes</div><div class="m-val" style="font-size:18px;color:#b45309">${money(r.gDic)}</div><div style="font-size:11px;color:#888;margin-top:2px">Con aumento de Juan Camilo</div></div>
+      <div class="metric"><div class="m-lbl">Te queda neto</div><div class="m-val" style="font-size:18px;color:${col(r.netoDic)}">${money(r.netoDic)}</div><div style="font-size:11px;color:#888;margin-top:2px">Margen ${r.ingD?pctTxt(r.netoDic/r.ingD):'—'}</div></div>
+      <div class="metric"><div class="m-lbl">Nómina / ingresos</div><div class="m-val" style="font-size:18px">${r.ingD?pctTxt(r.nDic/r.ingD):'—'}</div><div style="font-size:11px;color:#888;margin-top:2px">Costo por cliente ${money(r.costoDic)}</div></div>
+    </div>`;
 }
 
 // TABS
@@ -325,6 +442,7 @@ function render(){
   else if(id==='panel-calendario')rCal();
   else if(id==='panel-alertas')rAlertas();
   else if(id==='panel-recibos')rRecibos();
+  else if(id==='panel-rentabilidad')rRent();
 }
 
 // DASHBOARD
@@ -336,6 +454,7 @@ function rDash(){
     <div class="metrics">
       <div class="metric"><div class="m-lbl">Total clientes</div><div class="m-val" style="color:#1d4ed8">${D.clients.length}</div></div>
       <div class="metric"><div class="m-lbl">Facturación mensual</div><div class="m-val" style="color:#2d6a11;font-size:18px">$${fmt(billing)}</div></div>
+      <div class="metric"><div class="m-lbl">Te queda neto</div><div class="m-val" style="color:#2d6a11;font-size:18px">${money(rentCalc().netoHoy)}</div></div>
       <div class="metric"><div class="m-lbl">Cobros próximos (7d)</div><div class="m-val" style="color:#b45309">${prox}</div></div>
     </div>
     <div class="g2">
