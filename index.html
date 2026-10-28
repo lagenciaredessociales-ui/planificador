@@ -125,7 +125,7 @@ tr:hover td{background:#f9f9f7;cursor:pointer}
   <div class="topbar">
     <div>
       <div class="topbar-title">Planificador de Fechas de Corte</div>
-      <div class="topbar-sub">La Agencia de Redes Sociales · datos en la nube</div>
+      <div class="topbar-sub">La Agencia de Redes Sociales · <span id="rol-lbl"></span></div>
     </div>
     <div class="topbar-btns">
       <button class="btn btn-green" onclick="exportXls()">⬇ Excel</button>
@@ -141,7 +141,7 @@ tr:hover td{background:#f9f9f7;cursor:pointer}
       <div class="tab" onclick="goTab('calendario',this)">Calendario</div>
       <div class="tab" onclick="goTab('alertas',this)">Alertas</div>
       <div class="tab" onclick="goTab('recibos',this)">🧾 Recibos</div>
-      <div class="tab" onclick="goTab('rentabilidad',this)">💰 Rentabilidad</div>
+      <div class="tab" data-ger onclick="goTab('rentabilidad',this)">💰 Rentabilidad</div>
     </div>
   </div>
   <div class="tab-wrap">
@@ -246,7 +246,17 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
-const PASSWORD = '2315';
+// ACCESOS: gerencia y soporte (solo se guarda la huella de cada clave)
+var ROLES={'04e97796ac4d1ffe851398d3a25afad5f62916ef5ac22f6f10e83192dc15e8c3':'gerencia','a27d5e44ec600ca7b9eb90e459e0e839aac51b32e02b2f0b621af5e7b97b9cff':'soporte'};
+var ROL=sessionStorage.getItem('rol')||'';
+async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+function esGer(){return ROL==='gerencia';}
+function aplicarRol(){
+  document.querySelectorAll('[data-ger]').forEach(e=>e.style.display=esGer()?'':'none');
+  const sub=document.getElementById('rol-lbl');if(sub)sub.textContent=esGer()?'Acceso: Gerencia':'Acceso: Soporte';
+  const act=document.querySelector('.panel.on');
+  if(!esGer()&&act&&act.id==='panel-rentabilidad'){const t=document.querySelector('.tab');if(t)goTab('dashboard',t);}
+}
 
 const EMISOR = {
   nombre:'NICOLÁS ENRIQUE CHAVES MUÑOZ',
@@ -292,16 +302,19 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 function sbadge(s){const cfg=SECT[s]||{label:s,bg:'#eee',color:'#555'};return `<span class="badge" style="background:${cfg.bg};color:${cfg.color}">${cfg.label}</span>`;}
 
 // AUTH
-function login(){
-  if(document.getElementById('pw').value===PASSWORD){
+async function login(){
+  const r=ROLES[await sha(document.getElementById('pw').value)];
+  if(r){
+    ROL=r;sessionStorage.setItem('rol',r);
     document.getElementById('auth').style.display='none';
     document.getElementById('app').style.display='block';
     sessionStorage.setItem('a','1');
+    aplicarRol();
     startFB();
   } else {document.getElementById('aerr').style.display='block';document.getElementById('pw').value='';}
 }
-function logout(){sessionStorage.removeItem('a');document.getElementById('app').style.display='none';document.getElementById('auth').style.display='flex';document.getElementById('pw').value='';}
-if(sessionStorage.getItem('a')==='1'){document.getElementById('auth').style.display='none';document.getElementById('app').style.display='block';startFB();}
+function logout(){sessionStorage.removeItem('a');sessionStorage.removeItem('rol');ROL='';document.getElementById('app').style.display='none';document.getElementById('auth').style.display='flex';document.getElementById('pw').value='';}
+if(ROL&&sessionStorage.getItem('a')==='1'){document.getElementById('auth').style.display='none';document.getElementById('app').style.display='block';aplicarRol();startFB();}
 
 function startFB(){
   db.collection('clientes').onSnapshot(s=>{
@@ -309,6 +322,7 @@ function startFB(){
     if(!s.metadata.fromCache)syncBase();
     render();
   },err=>{console.error(err);toast('Error Firebase: '+err.message);});
+  if(esGer())db.collection('config').doc('finanzas').onSnapshot(d=>{const x=d.data()||{};GASTOS=x.gastos||[];META_NUEVOS=x.meta||[];render();},err=>console.error(err));
 }
 
 // CLIENTES BASE (lista oficial con fee y día de corte)
@@ -326,20 +340,9 @@ var CLIENTES_BASE = [
   {k:['moove','move'], nombre:'Moove', tipo:'servicios', monto:1250000, corte:1},
   {k:['malu'], nombre:'Malú', tipo:'ecommerce', monto:2500000, corte:10}
 ];
-// GASTOS MENSUALES (hoy y diciembre con el aumento de Juan Camilo)
-var GASTOS = [
-  {c:'Mafe · gerente de cuentas', hoy:2000000, dic:2000000, nom:true},
-  {c:'Juan Camilo · trafficker', hoy:2500000, dic:3500000, nom:true},
-  {c:'Carla · asesora de WhatsApp', hoy:1200000, dic:1200000, nom:true},
-  {c:'Adri · filmmaker y editora', hoy:2500000, dic:2500000, nom:true},
-  {c:'Carlos · revenue', hoy:800000, dic:800000, nom:true},
-  {c:'ChatGPT', hoy:100000, dic:100000},
-  {c:'CapCut', hoy:100000, dic:100000},
-  {c:'Claude (2 cuentas)', hoy:200000, dic:200000},
-  {c:'Transporte', hoy:1000000, dic:1000000}
-];
-// META: clientes nuevos a conseguir hasta el 30 de noviembre de 2026
-var META_NUEVOS = [{g:'Clientes de $1.800.000', n:4, fee:1800000},{g:'Clientes de $2.500.000', n:3, fee:2500000}];
+// GASTOS Y META: se cargan desde la base de datos solo para gerencia
+var GASTOS = [];
+var META_NUEVOS = [];
 
 function normTxt(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');}
 var baseSynced=false;
@@ -379,6 +382,7 @@ function money(v){return (v<0?'-$':'$')+fmt(Math.round(Math.abs(v)));}
 
 // RENTABILIDAD TAB
 function rRent(){
+  if(!esGer()){document.getElementById('panel-rentabilidad').innerHTML='';return;}
   const r=rentCalc();
   const col=v=>v<0?'#c0392b':'#2d6a11';
   document.getElementById('panel-rentabilidad').innerHTML=`
@@ -453,18 +457,18 @@ function rDash(){
   document.getElementById('panel-dashboard').innerHTML=`
     <div class="metrics">
       <div class="metric"><div class="m-lbl">Total clientes</div><div class="m-val" style="color:#1d4ed8">${D.clients.length}</div></div>
-      <div class="metric"><div class="m-lbl">Facturación mensual</div><div class="m-val" style="color:#2d6a11;font-size:18px">$${fmt(billing)}</div></div>
-      <div class="metric"><div class="m-lbl">Te queda neto</div><div class="m-val" style="color:#2d6a11;font-size:18px">${money(rentCalc().netoHoy)}</div></div>
+      ${esGer()?`<div class="metric"><div class="m-lbl">Facturación mensual</div><div class="m-val" style="color:#2d6a11;font-size:18px">$${fmt(billing)}</div></div>
+      <div class="metric"><div class="m-lbl">Te queda neto</div><div class="m-val" style="color:#2d6a11;font-size:18px">${money(rentCalc().netoHoy)}</div></div>`:''}
       <div class="metric"><div class="m-lbl">Cobros próximos (7d)</div><div class="m-val" style="color:#b45309">${prox}</div></div>
     </div>
     <div class="g2">
       <div class="card">
         <div class="card-h"><span class="card-t">Distribución por sector</span></div>
         ${Object.entries(sectores).map(([k,v])=>`<div class="sec-row"><span style="min-width:110px;color:#666;font-size:11px;font-weight:600">${SECT[k]?.label||k}</span><div class="sec-bar"><div class="sec-fill" style="width:${Math.round(v/D.clients.length*100)}%;background:${SECT[k]?.dot||'#888'}"></div></div><span style="font-size:11px;color:#888;font-weight:700">${v}</span></div>`).join('')||'<p style="color:#aaa;font-size:12px">Sin clientes</p>'}
-        <div style="display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid #f0f0eb;margin-top:6px">
+        ${esGer()?`<div style="display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid #f0f0eb;margin-top:6px">
           <span style="font-size:12px;font-weight:700;color:#666">Total</span>
           <span style="font-size:15px;font-weight:900;color:#1a1a1a">$${fmt(billing)}</span>
-        </div>
+        </div>`:''}
       </div>
       <div class="card">
         <div class="card-h"><span class="card-t">⚡ Cobros próximos 3 días</span></div>
@@ -516,7 +520,7 @@ function rClientes(){
         <td><button class="btn btn-sm btn-dark" onclick="event.stopPropagation();abrirRecibo('${c.id}')" style="font-size:11px">🧾 Recibo</button></td>
       </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;color:#aaa;padding:24px">Sin clientes</td></tr>'}</tbody>
     </table>
-    <div class="total-bar"><span style="font-size:13px;font-weight:700;color:#666">Total facturación</span><span style="font-size:18px;font-weight:900;color:#1a1a1a">$${fmt(list.reduce((s,c)=>s+(+c.monto||0),0))}</span></div>
+    <div class="total-bar" ${esGer()?'':'style="display:none"'}><span style="font-size:13px;font-weight:700;color:#666">Total facturación</span><span style="font-size:18px;font-weight:900;color:#1a1a1a">$${fmt(list.reduce((s,c)=>s+(+c.monto||0),0))}</span></div>
     </div></div>`;
 }
 
