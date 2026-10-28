@@ -202,8 +202,14 @@ tr:hover td{background:#f9f9f7;cursor:pointer}
       <div><div class="flbl">Fecha</div><input class="fi" type="date" id="r-fecha"></div>
       <div><div class="flbl">N° Recibo</div><input class="fi" id="r-num" placeholder="001"></div>
     </div>
-    <div class="frow"><div class="flbl">Concepto / Descripción del servicio</div>
-      <input class="fi" id="r-concepto" placeholder="Ej: Gestión de redes sociales — Noviembre 2026">
+    <div class="frow"><div class="flbl">A nombre de (persona de contacto)</div>
+      <input class="fi" id="r-anombre" placeholder="Ej: Ferney Echeverry">
+    </div>
+    <div class="frow"><div class="flbl">Servicio (título)</div>
+      <input class="fi" id="r-concepto" placeholder="Ej: Plan Mensual Completo">
+    </div>
+    <div class="frow"><div class="flbl">Detalle del servicio</div>
+      <input class="fi" id="r-detalle" placeholder="Ej: Contenido, Meta Ads, Community Management">
     </div>
     <div style="background:#f9f9f7;border-radius:8px;padding:14px;margin-bottom:10px">
       <div style="font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">➕ Pagos extra / ➖ Descuentos</div>
@@ -223,7 +229,7 @@ tr:hover td{background:#f9f9f7;cursor:pointer}
 
 <!-- MODAL RECIBO FINAL -->
 <div class="modal-bg" id="m-recibo-final">
-  <div class="modal" style="max-width:560px">
+  <div class="modal" style="max-width:780px">
     <div id="recibo-render"></div>
     <div class="modal-foot" style="margin-top:20px">
       <button class="btn btn-sm" onclick="closeM('m-recibo-final')">Cerrar</button>
@@ -260,13 +266,17 @@ function aplicarRol(){
 
 const EMISOR = {
   nombre:'NICOLÁS ENRIQUE CHAVES MUÑOZ',
-  agencia:'La Agencia de Redes Sociales',
-  direccion:'BOSQUE VERDE OFI 1478',
-  tel:'3214459727',
-  depto:'ANTIOQUIA-COLOMBIA',
+  nit:'100.743.7540-9',
+  direccion:'SANTA HELENA VÍA AL ROSARIO, FINCA 33',
+  tel:'3019052806',
+  depto:'ANTIOQUIA - COLOMBIA',
+  nequi:'3112585036',
+  nequiTitular:'Nicolas Chaves',
   banco:'Bancolombia Ahorros',
-  titular:'Nicolás Enrique Chaves Muñoz',
-  telPago:'+57 301 905 2806'
+  cuenta:'91226998166',
+  titular:'Nicolas Enrique Chaves Muñoz',
+  cc:'1007437540',
+  legal:'Este documento es una cuenta de cobro y soporte de pago por la prestación de servicios. No constituye factura electrónica de venta ni documento equivalente.'
 };
 
 const SECT = {
@@ -327,7 +337,7 @@ function startFB(){
 
 // CLIENTES BASE (lista oficial con fee y día de corte)
 var CLIENTES_BASE = [
-  {k:['nido'], nombre:'Nido Inmobiliaria', tipo:'servicios', monto:600000, corte:1},
+  {k:['nido','niddo'], nombre:'Nido Inmobiliaria', tipo:'servicios', monto:600000, corte:1},
   {k:['cositas'], nombre:'Las Cositas de las Uñas', tipo:'pyme', monto:1500000, corte:10},
   {k:['refugio'], nombre:'Hotel Refugio Natural Guarne', tipo:'hoteleria', monto:1800000, corte:1},
   {k:['opensea'], nombre:'Hotel Open Sea Cartagena', tipo:'hoteleria', monto:1800000, corte:1},
@@ -360,7 +370,7 @@ function syncBase(){
       if(+m.corte!==b.corte){upd.corte=b.corte;if(!m.pago||+m.pago===+m.corte)upd.pago=b.corte;}
       if(Object.keys(upd).length)ops.push(db.collection('clientes').doc(m.id).update(upd));
     } else {
-      ops.push(db.collection('clientes').add({nombre:b.nombre,tipo:b.tipo,monto:b.monto,corte:b.corte,pago:b.corte,estado:'activo',email:'',notas:''}));
+      ops.push(db.collection('clientes').doc('base-'+b.k[0]).set({nombre:b.nombre,tipo:b.tipo,monto:b.monto,corte:b.corte,pago:b.corte,estado:'activo',email:'',notas:''}));
     }
   });
   if(ops.length)Promise.all(ops).then(()=>toast('Clientes actualizados ✓ ('+ops.length+' cambios)')).catch(e=>toast('Error: '+e.message));
@@ -626,7 +636,9 @@ function abrirRecibo(id){
   document.getElementById('r-monto').value=c.monto||0;
   document.getElementById('r-fecha').value=todayStr();
   document.getElementById('r-num').value=String(Math.floor(Math.random()*900)+100);
-  document.getElementById('r-concepto').value='Gestión de redes sociales — '+MN[NOW.getMonth()]+' '+NOW.getFullYear();
+  document.getElementById('r-concepto').value='Plan Mensual — '+MN[NOW.getMonth()]+' '+NOW.getFullYear();
+  document.getElementById('r-detalle').value='Contenido, Meta Ads, Community Management';
+  document.getElementById('r-anombre').value=c.contacto||'';
   document.getElementById('extras-list').innerHTML='';
   actualizarTotal();
   document.getElementById('m-recibo').classList.add('op');
@@ -673,60 +685,121 @@ function getTotal(){
   return extras.reduce((s,e)=>e.tipo==='suma'?s+e.val:s-e.val,base);
 }
 
+function numLetras(n){
+  n=Math.round(Math.abs(n));
+  const U=['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve','veinte','veintiuno','veintidós','veintitrés','veinticuatro','veinticinco','veintiséis','veintisiete','veintiocho','veintinueve'];
+  const D=['','','','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa'];
+  const C=['','ciento','doscientos','trescientos','cuatrocientos','quinientos','seiscientos','setecientos','ochocientos','novecientos'];
+  function cien(x){if(x===0)return '';if(x===100)return 'cien';const c=Math.floor(x/100),r=x%100;let t=C[c];if(r){t+=(t?' ':'')+(r<30?U[r]:D[Math.floor(r/10)]+(r%10?' y '+U[r%10]:''));}return t;}
+  function mil(x){const m=Math.floor(x/1000),r=x%1000;let t='';if(m)t=m===1?'mil':cien(m).replace(/veintiuno$/,'veintiún').replace(/uno$/,'un')+' mil';if(r)t+=(t?' ':'')+cien(r);return t;}
+  if(n===0)return 'Cero pesos';
+  const mm=Math.floor(n/1e6),r=n%1e6;let t='';
+  if(mm)t=mm===1?'un millón':mil(mm).replace(/veintiuno$/,'veintiún').replace(/uno$/,'un')+' millones';
+  if(r)t+=(t?' ':'')+mil(r);
+  const de=(!r&&mm)?' de':'';
+  t=t+de+' pesos';
+  return t.charAt(0).toUpperCase()+t.slice(1);
+}
+var RC_CSS=`
+.rc{background:#fff;color:#1b1b1b;font-family:Helvetica,Arial,sans-serif;padding:26px 24px;font-size:12px;line-height:1.45}
+.rc *{box-sizing:border-box}
+.rc .az{color:#1f4e8c}
+.rc .fecha{font-weight:700;font-size:12px;color:#1f4e8c}
+.rc .emi{text-align:center;margin:14px 0 22px}
+.rc .emi .nom{font-size:18px;font-weight:800;color:#1f4e8c;letter-spacing:.2px}
+.rc .emi div{font-weight:700;color:#1f4e8c;font-size:12px;margin-top:6px}
+.rc .doc{text-align:center;font-size:11px;font-weight:800;letter-spacing:.12em;color:#1f4e8c;margin:-10px 0 18px}
+.rc .cab{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+.rc .cab .l div{margin-bottom:8px}
+.rc .cab b{color:#1f4e8c;display:inline-block;min-width:88px}
+.rc .gen{border:1.5px solid #1b1b1b;padding:10px 14px;display:flex;gap:16px;min-width:200px}
+.rc .gen b{color:#1f4e8c}
+.rc table{width:100%;border-collapse:collapse;margin-bottom:12px}
+.rc th{background:#dde6f3;color:#1f4e8c;font-weight:700;padding:10px 8px;border:1px solid #c9d6ea;text-align:center}
+.rc td{border:1px solid #c9d6ea;padding:14px 10px;vertical-align:middle}
+.rc table th{text-transform:none;letter-spacing:0;font-size:12px}
+.rc table tr:last-child td,.rc table td{border-bottom:1px solid #c9d6ea}
+.rc td.i{text-align:center;width:40px}
+.rc td.v{text-align:right;white-space:nowrap}
+.rc td .t{font-weight:700;margin-bottom:6px}
+.rc td .d{color:#333}
+.rc .pill{display:inline-block;background:#dde6f3;color:#1f4e8c;font-weight:700;font-size:11px;padding:7px 14px;border-radius:20px;white-space:nowrap}
+.rc .pill.des{background:#fde2e2;color:#a12a2a}
+.rc .res{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+.rc .res .l b{color:#1f4e8c;display:block;margin:4px 0 6px}
+.rc .tot{border:1.5px solid #c9d6ea;padding:10px 16px;min-width:230px}
+.rc .tot div{display:flex;justify-content:space-between;padding:4px 0}
+.rc .tot .g{font-weight:800;font-size:14px}
+.rc h4{color:#1f4e8c;font-size:12px;margin:12px 0 6px}
+.rc .pagos{display:flex;gap:0;margin-top:6px}
+.rc .pagos>div{flex:1;padding:4px 18px}
+.rc .pagos>div+div{border-left:1.5px solid #c9d6ea}
+.rc .pagos b{color:#1f4e8c;display:block;margin-bottom:6px}
+.rc .gracias{text-align:center;font-weight:800;color:#1f4e8c;margin-top:16px}
+.rc .legal{margin-top:12px;padding-top:10px;border-top:1px solid #dde6f3;font-size:9.5px;color:#666;text-align:center;line-height:1.5}
+@media (max-width:520px){.rc .cab,.rc .res{flex-direction:column}.rc .pagos{flex-direction:column}.rc .pagos>div+div{border-left:none;border-top:1.5px solid #c9d6ea;margin-top:8px;padding-top:10px}.rc .tot,.rc .gen{min-width:0;width:100%}}
+`;
+(function(){const st=document.createElement('style');st.textContent=RC_CSS;document.head.appendChild(st);})();
+
 function generarRecibo(){
   const c=D.clients.find(x=>x.id===reciboClienteId);if(!c)return;
   const base=+document.getElementById('r-monto').value||0;
   const fecha=document.getElementById('r-fecha').value;
   const num=document.getElementById('r-num').value||'001';
-  const concepto=document.getElementById('r-concepto').value;
-  const total=getTotal();
+  const concepto=document.getElementById('r-concepto').value||'Plan Mensual';
+  const detalle=document.getElementById('r-detalle').value||'';
+  const anombre=document.getElementById('r-anombre').value.trim();
+  const total=Math.max(0,getTotal());
   const fechaFmt=new Date(fecha+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'});
-
-  let extrasHtml='';
-  if(extras.length){
-    extrasHtml=`<div class="recibo-extras">
-      <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Detalle</div>
-      <div class="recibo-extras-row" style="font-weight:700"><span>Servicio base</span><span>$${fmt(base)}</span></div>
-      ${extras.map(e=>`<div class="recibo-extras-row"><span>${e.desc}</span><span style="color:${e.tipo==='suma'?'#2d6a11':'#e74c3c'}">${e.tipo==='suma'?'+':'-'}$${fmt(e.val)}</span></div>`).join('')}
-    </div>`;
-  }
-
+  if(anombre!==(c.contacto||''))db.collection('clientes').doc(c.id).update({contacto:anombre}).catch(()=>{});
+  const items=[{t:concepto,d:detalle,tipo:'Mensual fijo',v:base,neg:false}].concat(extras.map(e=>({t:e.desc,d:'',tipo:e.tipo==='suma'?'Adicional':'Descuento',v:e.val,neg:e.tipo!=='suma'})));
+  const bruto=items.filter(i=>!i.neg).reduce((s,i)=>s+i.v,0);
+  const desc=items.filter(i=>i.neg).reduce((s,i)=>s+i.v,0);
+  const esc=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
   document.getElementById('recibo-render').innerHTML=`
-    <div class="recibo-preview" id="recibo-imprimible">
-      <div class="recibo-header">
-        <div>
-          <div class="recibo-logo">La Agencia</div>
-          <div style="font-size:11px;color:#666;margin-top:2px;font-family:-apple-system,sans-serif">de Redes Sociales</div>
-        </div>
-        <div class="recibo-title">
-          <div style="font-size:14px;font-weight:900;font-family:-apple-system,sans-serif">RECIBO DE COBRO</div>
-          <div>N° ${num}</div>
-          <div>${fechaFmt}</div>
-        </div>
+  <div class="rc" id="recibo-imprimible">
+    <div class="fecha">${fechaFmt}</div>
+    <div class="emi">
+      <div class="nom">${EMISOR.nombre}</div>
+      <div>NIT ${EMISOR.nit}</div>
+      <div>${EMISOR.direccion}</div>
+      <div>TEL. ${EMISOR.tel}</div>
+      <div>${EMISOR.depto}</div>
+    </div>
+    <div class="doc">CUENTA DE COBRO N° ${esc(num)}</div>
+    <div class="cab">
+      <div class="l">
+        <div><b>Señores:</b> ${esc(c.nombre.toUpperCase())}</div>
+        ${anombre?`<div><b>A nombre de:</b> ${esc(anombre)}</div>`:''}
       </div>
-      <div style="margin-bottom:16px">
-        <div class="recibo-row"><span class="recibo-label">Cliente</span><span class="recibo-value">${c.nombre}</span></div>
-        <div class="recibo-row"><span class="recibo-label">Concepto</span><span class="recibo-value">${concepto}</span></div>
-        <div class="recibo-row"><span class="recibo-label">Fecha de corte</span><span class="recibo-value">Día ${c.corte} de cada mes</span></div>
-        ${extrasHtml}
+      <div class="gen"><b>Generación</b><span>${fechaFmt}</span></div>
+    </div>
+    <table>
+      <thead><tr><th>Ítem</th><th>Descripción</th><th>Tipo</th><th>Vr. Total</th></tr></thead>
+      <tbody>${items.map((it,ix)=>`<tr><td class="i">${ix+1}</td><td><div class="t">${esc(it.t)}</div>${it.d?`<div class="d">${esc(it.d)}</div>`:''}</td><td style="text-align:center"><span class="pill${it.neg?' des':''}">${it.tipo}</span></td><td class="v">${it.neg?'-':''}$${fmt(it.v)}</td></tr>`).join('')}</tbody>
+    </table>
+    <div class="res">
+      <div class="l">
+        <b>TOTAL ÍTEMS: ${items.length}</b>
+        <b>VALOR EN LETRAS:</b>
+        <div>${numLetras(total)}</div>
       </div>
-      <div class="recibo-total">
-        <span class="recibo-total-label">Total a pagar</span>
-        <span class="recibo-total-value">$${fmt(Math.max(0,total))}</span>
+      <div class="tot">
+        <div><span>Total Bruto</span><span>$${fmt(bruto)}</span></div>
+        ${desc?`<div><span>Descuentos</span><span>-$${fmt(desc)}</span></div>`:''}
+        <div class="g"><span>TOTAL</span><span>$${fmt(total)}</span></div>
       </div>
-      <div style="margin-top:14px;padding:12px;background:#f9f9f7;border-radius:8px;font-family:-apple-system,sans-serif">
-        <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Datos de pago</div>
-        <div style="font-size:12px;line-height:1.9">
-          <div><b>${EMISOR.banco}</b></div>
-          <div>Titular: ${EMISOR.titular}</div>
-          <div>WhatsApp / Nequi: ${EMISOR.telPago}</div>
-        </div>
-      </div>
-      <div class="recibo-footer">
-        ${EMISOR.nombre}<br>
-        ${EMISOR.direccion} · TEL ${EMISOR.tel} · ${EMISOR.depto}
-      </div>
-    </div>`;
+    </div>
+    <h4>CONDICIONES DE PAGO:</h4>
+    <div>De contado</div>
+    <h4>MÉTODOS DE PAGO AUTORIZADOS:</h4>
+    <div class="pagos">
+      <div><b>NEQUI</b>${EMISOR.nequi}<br>${EMISOR.nequiTitular}</div>
+      <div><b>BANCOLOMBIA AHORROS</b># de cuenta: ${EMISOR.cuenta}<br>${EMISOR.titular}<br>C.C ${EMISOR.cc}</div>
+    </div>
+    <div class="gracias">¡Gracias por su confianza!</div>
+    <div class="legal">${EMISOR.legal}</div>
+  </div>`;
   closeM('m-recibo');
   document.getElementById('m-recibo-final').classList.add('op');
 }
@@ -734,24 +807,7 @@ function generarRecibo(){
 function printRecibo(){
   const contenido=document.getElementById('recibo-imprimible').outerHTML;
   const w=window.open('','_blank');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo</title><style>
-    body{font-family:Georgia,serif;padding:30px;max-width:480px;margin:0 auto}
-    .recibo-preview{border:2px solid #1a1a1a;border-radius:12px;padding:28px}
-    .recibo-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #1a1a1a}
-    .recibo-logo{font-size:20px;font-weight:900;letter-spacing:-1px;font-family:-apple-system,sans-serif}
-    .recibo-title{font-size:11px;text-align:right;color:#666;line-height:1.7;font-family:-apple-system,sans-serif}
-    .recibo-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0eb;font-size:13px;gap:12px}
-    .recibo-row:last-child{border-bottom:none}
-    .recibo-label{color:#666;font-size:12px;flex-shrink:0}
-    .recibo-value{font-weight:700;font-size:13px;text-align:right}
-    .recibo-total{background:#1a1a1a;color:#fff;border-radius:8px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:16px}
-    .recibo-total-label{font-size:13px;opacity:.8;font-family:-apple-system,sans-serif}
-    .recibo-total-value{font-size:22px;font-weight:900;font-family:-apple-system,sans-serif}
-    .recibo-footer{margin-top:16px;padding-top:12px;border-top:1px solid #e5e5e0;font-size:10px;color:#aaa;text-align:center;line-height:1.6;font-family:-apple-system,sans-serif}
-    .recibo-extras{margin-top:12px;padding:12px;background:#f9f9f7;border-radius:8px;font-family:-apple-system,sans-serif}
-    .recibo-extras-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0}
-    @media print{body{padding:0}}
-  </style></head><body>${contenido}<script>window.onload=()=>window.print()<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cuenta de cobro</title><style>body{margin:0;padding:20px}.rc{max-width:760px;margin:0 auto}${RC_CSS}@media print{body{padding:0}@page{margin:12mm}}</style></head><body>${contenido}<script>window.onload=()=>window.print()<\/script></body></html>`);
   w.document.close();
 }
 
@@ -761,7 +817,7 @@ function copyReciboWA(){
   const total=getTotal();
   const concepto=document.getElementById('r-concepto')?.value||'';
   const num=document.getElementById('r-num')?.value||'001';
-  const texto=`🧾 *RECIBO DE COBRO N° ${num}*\n*La Agencia de Redes Sociales*\n\n👤 *Cliente:* ${c.nombre}\n📋 *Concepto:* ${concepto}\n📅 *Día de corte:* ${c.corte} de cada mes\n${extras.map(e=>`${e.tipo==='suma'?'➕':'➖'} *${e.desc}:* $${fmt(e.val)}`).join('\n')}${extras.length?'\n':''}\n💰 *Total a pagar: $${fmt(Math.max(0,total))}*\n\n🏦 *Pago a:*\n${EMISOR.banco}\nTitular: ${EMISOR.titular}\nWhatsApp: ${EMISOR.telPago}\n\n¡Gracias por confiar en nosotros! 🙏`;
+  const texto=`🧾 *CUENTA DE COBRO N° ${num}*\n*${EMISOR.nombre}*\n\n👤 *Cliente:* ${c.nombre}\n📋 *Concepto:* ${concepto}\n📅 *Día de corte:* ${c.corte} de cada mes\n${extras.map(e=>`${e.tipo==='suma'?'➕':'➖'} *${e.desc}:* $${fmt(e.val)}`).join('\n')}${extras.length?'\n':''}\n💰 *Total a pagar: $${fmt(Math.max(0,total))}*\n\n🏦 *Métodos de pago autorizados:*\n*Nequi:* ${EMISOR.nequi} · ${EMISOR.nequiTitular}\n*Bancolombia Ahorros:* ${EMISOR.cuenta}\n${EMISOR.titular} · C.C ${EMISOR.cc}\n\n¡Gracias por su confianza! 🙏`;
   navigator.clipboard.writeText(texto).then(()=>toast('Copiado para WhatsApp ✓')).catch(()=>{
     const ta=document.createElement('textarea');ta.value=texto;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('Copiado ✓');
   });
