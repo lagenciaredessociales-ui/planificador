@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Planificador de Fechas de Corte</title>
+<title>Planificador · La Agencia</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh}
@@ -105,6 +106,56 @@ tr:hover td{background:#f9f9f7;cursor:pointer}
 .cli-card:hover{background:#f0f0eb;border-color:#ccc}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999}
 #toast.on{opacity:1}
+
+/* ===== COMMUNITY ===== */
+.cdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:-1px;flex-shrink:0}
+.swatches{display:flex;flex-wrap:wrap;gap:6px}
+.sw{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid #fff;box-shadow:0 0 0 1px #ddd}
+.sw.on{box-shadow:0 0 0 2px #1a1a1a}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;border:1px solid #e0e0da;background:#fff;font-size:12px;font-weight:700;cursor:pointer;color:#444}
+.chip.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.pcal .cal-cell{min-height:92px}
+.pev{display:flex;align-items:flex-start;gap:4px;font-size:10px;line-height:1.25;padding:3px 4px;border-radius:4px;margin-bottom:3px;border-left:3px solid;cursor:pointer;font-weight:700;color:#1a1a1a}
+.pev .ck{flex-shrink:0;width:13px;height:13px;border-radius:3px;border:1.5px solid currentColor;background:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:9px;margin-top:1px;cursor:pointer;color:#555}
+.pev .tx{overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word}
+.pev.done{opacity:.5}.pev.done .tx{text-decoration:line-through}
+.pev.done .ck{background:#2d6a11;border-color:#2d6a11;color:#fff}
+.pev.late{outline:1.5px solid #e74c3c;outline-offset:-1px}
+.pev.wait .ck{border-color:#d97706}
+.prow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0eb}
+.prow:last-child{border-bottom:none}
+.prow .main{flex:1;min-width:0;cursor:pointer}
+.prow .t{font-size:13px;font-weight:700}
+.prow .s{font-size:11px;color:#888;margin-top:2px}
+.prow.done .t{text-decoration:line-through;color:#999}
+.est{display:flex;gap:4px;flex-shrink:0}
+.est button{border:1px solid #ddd;background:#fff;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#888;font-family:inherit}
+.est button.on.e-p{background:#fee2e2;border-color:#fca5a5;color:#b91c1c}
+.est button.on.e-c{background:#fef3c7;border-color:#fcd34d;color:#92400e}
+.est button.on.e-h{background:#dcfce7;border-color:#86efac;color:#166534}
+.meta-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12px}
+.meta-row .lb{min-width:130px;font-weight:700;color:#555}
+.meta-row .nm{min-width:52px;text-align:right;font-weight:800}
+.fic-h{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.fic-h .av{width:44px;height:44px;border-radius:12px;flex-shrink:0}
+.ftabs{display:flex;gap:4px;background:#f5f5f0;border-radius:10px;padding:4px;margin-bottom:16px}
+.ftab{flex:1;text-align:center;padding:9px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:#888}
+.ftab.on{background:#fff;color:#1a1a1a;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.kv div{background:#f9f9f7;border-radius:10px;padding:12px}
+.kv .k{font-size:10px;color:#888;text-transform:uppercase;font-weight:700;letter-spacing:.04em;margin-bottom:4px}
+.kv .v{font-size:16px;font-weight:800}
+.empty{color:#aaa;font-size:12px;padding:10px 0}
+.auth-link{font-size:12px;color:#888;margin-top:12px;cursor:pointer;text-decoration:underline;background:none;border:0;font-family:inherit}
+.pagenda{display:none}
+.pagenda .dia{font-size:11px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:.04em;margin:14px 0 6px}
+.pagenda .dia.hoy{color:#1a1a1a}
+.pagenda .pev{font-size:13px;padding:9px 10px;border-radius:8px;margin-bottom:6px}
+.pagenda .pev .ck{width:18px;height:18px;font-size:12px}
+@media(max-width:640px){.g2,.kv{grid-template-columns:1fr}.pcal{display:none}.pagenda{display:block}.meta-row .lb{min-width:96px}.modal{padding:20px}
+.prow{flex-wrap:wrap}.prow .main{flex:1 1 calc(100% - 30px)}.est{width:100%;padding-left:17px}.est button{flex:1}
+.cal-nav span{font-size:14px!important}}
 </style>
 </head>
 <body>
@@ -114,9 +165,11 @@ tr:hover td{background:#f9f9f7;cursor:pointer}
     <div class="auth-logo">📋</div>
     <h1>Planificador</h1>
     <p>La Agencia de Redes Sociales</p>
-    <input class="fi" type="password" id="pw" placeholder="Contraseña" onkeydown="if(event.key==='Enter')login()">
-    <div class="auth-err" id="aerr">Contraseña incorrecta</div>
+    <input class="fi" type="email" id="em" placeholder="Correo" autocomplete="username" style="margin-bottom:8px">
+    <input class="fi" type="password" id="pw" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+    <div class="auth-err" id="aerr">Correo o contraseña incorrectos</div>
     <button class="btn btn-dark" style="width:100%;margin-top:12px;padding:12px;font-weight:700" onclick="login()">Entrar</button>
+    <button class="auth-link" onclick="resetPw()">¿Olvidaste tu contraseña?</button>
   </div>
 </div>
 
@@ -124,8 +177,8 @@ tr:hover td{background:#f9f9f7;cursor:pointer}
 <div class="page">
   <div class="topbar">
     <div>
-      <div class="topbar-title">Planificador de Fechas de Corte</div>
-      <div class="topbar-sub">La Agencia de Redes Sociales · <span id="rol-lbl"></span></div>
+      <div class="topbar-title">Planificador · Cobros y Community</div>
+      <div class="topbar-sub">La Agencia de Redes Sociales · <span id="rol-lbl"></span> · <span id="user-lbl"></span></div>
     </div>
     <div class="topbar-btns">
       <button class="btn btn-green" onclick="exportXls()">⬇ Excel</button>
@@ -137,6 +190,7 @@ tr:hover td{background:#f9f9f7;cursor:pointer}
   <div style="background:#fff;border-radius:12px 12px 0 0">
     <div class="tabs">
       <div class="tab on" onclick="goTab('dashboard',this)">Dashboard</div>
+      <div class="tab" onclick="goTab('community',this)">📋 Community</div>
       <div class="tab" onclick="goTab('clientes',this)">Clientes</div>
       <div class="tab" onclick="goTab('calendario',this)">Calendario</div>
       <div class="tab" onclick="goTab('alertas',this)">Alertas</div>
@@ -146,6 +200,7 @@ tr:hover td{background:#f9f9f7;cursor:pointer}
   </div>
   <div class="tab-wrap">
     <div id="panel-dashboard" class="panel on"></div>
+    <div id="panel-community" class="panel"></div>
     <div id="panel-clientes" class="panel"></div>
     <div id="panel-calendario" class="panel"></div>
     <div id="panel-alertas" class="panel"></div>
@@ -181,7 +236,11 @@ tr:hover td{background:#f9f9f7;cursor:pointer}
       </select></div>
       <div><div class="flbl">Email (para recibo)</div><input class="fi" id="c-email" placeholder="cliente@email.com"></div>
     </div>
-    <div class="frow"><div class="flbl">Notas</div><input class="fi" id="c-notas" placeholder="Notas opcionales"></div>
+    <div class="fg">
+      <div><div class="flbl">Saldo pendiente ($)</div><input class="fi" id="c-debe" type="number" placeholder="0"></div>
+      <div><div class="flbl">Notas</div><input class="fi" id="c-notas" placeholder="Notas opcionales"></div>
+    </div>
+    <div class="frow"><div class="flbl">Color del cliente</div><div class="swatches" id="c-colors"></div></div>
     <div class="modal-foot">
       <button class="btn btn-red btn-sm" id="c-del" onclick="delClient()" style="display:none;margin-right:auto">Eliminar</button>
       <button class="btn btn-sm" onclick="closeM('m-cli')">Cancelar</button>
@@ -239,6 +298,56 @@ tr:hover td{background:#f9f9f7;cursor:pointer}
   </div>
 </div>
 
+<!-- MODAL FICHA CLIENTE -->
+<div class="modal-bg" id="m-ficha">
+  <div class="modal" style="max-width:680px">
+    <div id="ficha-body"></div>
+    <div class="modal-foot"><button class="btn btn-sm" onclick="closeM('m-ficha')">Cerrar</button></div>
+  </div>
+</div>
+
+<!-- MODAL PENDIENTE -->
+<div class="modal-bg" id="m-pend">
+  <div class="modal"><h2 id="mp-h">Nuevo pendiente</h2>
+    <div class="frow"><div class="flbl">Cliente</div><select class="fi" id="p-cli"></select></div>
+    <div class="fg">
+      <div><div class="flbl">Tipo</div><select class="fi" id="p-tipo"></select></div>
+      <div><div class="flbl">Cantidad</div><input class="fi" id="p-cant" type="number" min="1" value="1"></div>
+    </div>
+    <div class="frow"><div class="flbl">Pendiente</div><input class="fi" id="p-tit" placeholder="Ej: Organizar portadas de reels"></div>
+    <div class="fg">
+      <div><div class="flbl">Fecha</div><input class="fi" id="p-fecha" type="date"></div>
+      <div><div class="flbl">Hora</div><input class="fi" id="p-hora" type="time"></div>
+    </div>
+    <div class="fg">
+      <div><div class="flbl">Estado</div><select class="fi" id="p-est">
+        <option value="pendiente">🔴 Pendiente</option><option value="cliente">🟡 Pendiente por cliente</option><option value="hecho">🟢 Realizado</option>
+      </select></div>
+      <div><div class="flbl">Responsable</div><input class="fi" id="p-resp" placeholder="Ej: Mafe"></div>
+    </div>
+    <div class="frow"><div class="flbl">Link del material (opcional)</div><input class="fi" id="p-link" placeholder="https://..."></div>
+    <div class="frow"><div class="flbl">Notas</div><input class="fi" id="p-notas" placeholder="Detalles"></div>
+    <div class="frow" id="p-audit" style="font-size:11px;color:#999"></div>
+    <div class="modal-foot">
+      <button class="btn btn-red btn-sm" id="p-del" onclick="delPend()" style="display:none;margin-right:auto">Eliminar</button>
+      <button class="btn btn-sm" onclick="closeM('m-pend')">Cancelar</button>
+      <button class="btn btn-dark btn-sm" onclick="savePend()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL METAS -->
+<div class="modal-bg" id="m-metas">
+  <div class="modal"><h2 id="mm-h">Metas del mes</h2>
+    <p style="font-size:12px;color:#888;margin:-10px 0 16px">Cuántas piezas tiene contratadas este cliente en el mes. El avance se cuenta solo con los pendientes marcados como realizados.</p>
+    <div id="mm-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-sm" onclick="closeM('m-metas')">Cancelar</button>
+      <button class="btn btn-dark btn-sm" onclick="saveMetas()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -251,15 +360,18 @@ firebase.initializeApp({
   appId:"1:921069281597:web:63263df578cad8e8b0e554"
 });
 const db = firebase.firestore();
+const auth = firebase.auth();
 
-// ACCESOS: gerencia y soporte (solo se guarda la huella de cada clave)
-var ROLES={'04e97796ac4d1ffe851398d3a25afad5f62916ef5ac22f6f10e83192dc15e8c3':'gerencia','a27d5e44ec600ca7b9eb90e459e0e839aac51b32e02b2f0b621af5e7b97b9cff':'soporte'};
-var ROL=sessionStorage.getItem('rol')||'';
-async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+// ACCESOS: cada persona entra con su usuario de Firebase (correo + contraseña).
+// Gerencia (ve rentabilidad) = estos correos. El resto del equipo entra como "Equipo".
+// La base de datos aplica la misma regla, así que no depende solo de esta pantalla.
+var GERENCIA=['lagenciaredessociales@gmail.com','ceomiagencia@gmail.com'];
+var ROL='', USER=null;
 function esGer(){return ROL==='gerencia';}
 function aplicarRol(){
   document.querySelectorAll('[data-ger]').forEach(e=>e.style.display=esGer()?'':'none');
-  const sub=document.getElementById('rol-lbl');if(sub)sub.textContent=esGer()?'Acceso: Gerencia':'Acceso: Soporte';
+  const sub=document.getElementById('rol-lbl');if(sub)sub.textContent=esGer()?'Acceso: Gerencia':'Acceso: Equipo';
+  const ul=document.getElementById('user-lbl');if(ul)ul.textContent=USER?USER.email:'';
   const act=document.querySelector('.panel.on');
   if(!esGer()&&act&&act.id==='panel-rentabilidad'){const t=document.querySelector('.tab');if(t)goTab('dashboard',t);}
 }
@@ -311,28 +423,51 @@ function alrts(n){return D.clients.flatMap(c=>{const a=[];const dc=daysTo(c.cort
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2800);}
 function sbadge(s){const cfg=SECT[s]||{label:s,bg:'#eee',color:'#555'};return `<span class="badge" style="background:${cfg.bg};color:${cfg.color}">${cfg.label}</span>`;}
 
-// AUTH
+// AUTH (Firebase Authentication)
 async function login(){
-  const r=ROLES[await sha(document.getElementById('pw').value)];
-  if(r){
-    ROL=r;sessionStorage.setItem('rol',r);
+  const em=document.getElementById('em').value.trim(), pw=document.getElementById('pw').value;
+  const er=document.getElementById('aerr');er.style.display='none';
+  if(!em||!pw){er.textContent='Escribe tu correo y contraseña';er.style.display='block';return;}
+  try{await auth.signInWithEmailAndPassword(em,pw);}
+  catch(e){er.textContent=(e.code==='auth/too-many-requests')?'Demasiados intentos. Espera unos minutos.':'Correo o contraseña incorrectos';er.style.display='block';document.getElementById('pw').value='';}
+}
+async function resetPw(){
+  const em=document.getElementById('em').value.trim();
+  const er=document.getElementById('aerr');
+  if(!em){er.textContent='Escribe tu correo arriba y vuelve a tocar el enlace';er.style.display='block';return;}
+  try{await auth.sendPasswordResetEmail(em);}catch(e){}
+  er.textContent='Si el correo tiene acceso, te llegó un enlace para crear una nueva contraseña.';er.style.display='block';
+}
+function logout(){auth.signOut();}
+var UNSUBS=[];
+function stopFB(){UNSUBS.forEach(u=>{try{u()}catch(e){}});UNSUBS=[];D.clients=[];PENDS=[];EQUIPO=[];baseSynced=false;colorsSynced=false;}
+auth.onAuthStateChanged(u=>{
+  USER=u||null;
+  if(u){
+    ROL=GERENCIA.includes((u.email||'').toLowerCase())?'gerencia':'equipo';
     document.getElementById('auth').style.display='none';
     document.getElementById('app').style.display='block';
-    sessionStorage.setItem('a','1');
-    aplicarRol();
-    startFB();
-  } else {document.getElementById('aerr').style.display='block';document.getElementById('pw').value='';}
-}
-function logout(){sessionStorage.removeItem('a');sessionStorage.removeItem('rol');ROL='';document.getElementById('app').style.display='none';document.getElementById('auth').style.display='flex';document.getElementById('pw').value='';}
-if(ROL&&sessionStorage.getItem('a')==='1'){document.getElementById('auth').style.display='none';document.getElementById('app').style.display='block';aplicarRol();startFB();}
+    aplicarRol();stopFB();startFB();
+  } else {
+    ROL='';stopFB();
+    document.getElementById('app').style.display='none';
+    document.getElementById('auth').style.display='flex';
+    document.getElementById('pw').value='';
+  }
+});
 
 function startFB(){
-  db.collection('clientes').onSnapshot(s=>{
+  UNSUBS.push(db.collection('clientes').onSnapshot(s=>{
     D.clients=s.docs.map(d=>({id:d.id,...d.data()}));
-    if(!s.metadata.fromCache)syncBase();
-    render();
-  },err=>{console.error(err);toast('Error Firebase: '+err.message);});
-  if(esGer())db.collection('config').doc('finanzas').onSnapshot(d=>{const x=d.data()||{};GASTOS=x.gastos||[];META_NUEVOS=x.meta||[];render();},err=>console.error(err));
+    if(!s.metadata.fromCache){syncBase();syncColors();}
+    render();refreshFicha();
+  },err=>{console.error(err);if(err.code==='permission-denied'){sinAcceso();return;}toast('Error Firebase: '+err.message);}));
+  UNSUBS.push(db.collection('pendientes').onSnapshot(s=>{
+    PENDS=s.docs.map(d=>({id:d.id,...d.data()}));
+    render();refreshFicha();
+  },err=>{console.error(err);toast('Error pendientes: '+err.message);}));
+  if(esGer())UNSUBS.push(db.collection('config').doc('finanzas').onSnapshot(d=>{const x=d.data()||{};GASTOS=x.gastos||[];META_NUEVOS=x.meta||[];render();},err=>console.error(err)));
+  if(esGer())UNSUBS.push(db.collection('equipo').onSnapshot(s=>{EQUIPO=s.docs.map(d=>({id:d.id,...d.data()}));render();},err=>console.error(err)));
 }
 
 // CLIENTES BASE (lista oficial con fee y día de corte)
@@ -408,7 +543,7 @@ function rRent(){
       <p style="font-size:12px;color:#888;margin:-6px 0 12px">Los gastos se reparten por igual entre los ${r.cls.length} clientes: ${money(r.costo)} por cliente. En rojo, lo que cuesta más de lo que paga.</p>
       <div class="tw"><table>
         <thead><tr><th>Cliente</th><th>Paga al mes</th><th>Costo asignado</th><th>Te deja</th><th>Margen</th></tr></thead>
-        <tbody>${r.rows.map(x=>`<tr onclick="openCliM('${x.c.id}')"><td><b>${x.c.nombre}</b></td><td>${money(x.fee)}</td><td>${money(x.costo)}</td><td style="font-weight:800;color:${col(x.u)}">${money(x.u)}</td><td style="font-weight:800;color:${col(x.u)}">${pctTxt(x.m)}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:#aaa;padding:24px">Sin clientes con monto</td></tr>'}</tbody>
+        <tbody>${r.rows.map(x=>`<tr onclick="openFicha('${x.c.id}')"><td><span class="cdot" style="background:${cColor(x.c)}"></span><b>${esc(x.c.nombre)}</b></td><td>${money(x.fee)}</td><td>${money(x.costo)}</td><td style="font-weight:800;color:${col(x.u)}">${money(x.u)}</td><td style="font-weight:800;color:${col(x.u)}">${pctTxt(x.m)}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:#aaa;padding:24px">Sin clientes con monto</td></tr>'}</tbody>
       </table></div>
       <div class="total-bar"><span style="font-size:13px;font-weight:700;color:#666">Total neto</span><span style="font-size:18px;font-weight:900;color:${col(r.netoHoy)}">${money(r.netoHoy)}</span></div>
     </div>
@@ -436,7 +571,7 @@ function rRent(){
       <div class="metric"><div class="m-lbl">Gastos al mes</div><div class="m-val" style="font-size:18px;color:#b45309">${money(r.gDic)}</div><div style="font-size:11px;color:#888;margin-top:2px">Con aumento de Juan Camilo</div></div>
       <div class="metric"><div class="m-lbl">Te queda neto</div><div class="m-val" style="font-size:18px;color:${col(r.netoDic)}">${money(r.netoDic)}</div><div style="font-size:11px;color:#888;margin-top:2px">Margen ${r.ingD?pctTxt(r.netoDic/r.ingD):'—'}</div></div>
       <div class="metric"><div class="m-lbl">Nómina / ingresos</div><div class="m-val" style="font-size:18px">${r.ingD?pctTxt(r.nDic/r.ingD):'—'}</div><div style="font-size:11px;color:#888;margin-top:2px">Costo por cliente ${money(r.costoDic)}</div></div>
-    </div>`;
+    </div>${equipoCard()}`;
 }
 
 // TABS
@@ -452,6 +587,7 @@ function render(){
   if(!active)return;
   const id=active.id;
   if(id==='panel-dashboard')rDash();
+  else if(id==='panel-community')rCommunity();
   else if(id==='panel-clientes')rClientes();
   else if(id==='panel-calendario')rCal();
   else if(id==='panel-alertas')rAlertas();
@@ -489,8 +625,8 @@ function rDash(){
       <div class="card-h"><span class="card-t">Todos los clientes</span></div>
       <div class="tw"><table>
         <thead><tr><th>Cliente</th><th>Sector</th><th>Monto</th><th>Día corte</th><th>Próx. corte</th><th>Estado</th><th>Recibo</th></tr></thead>
-        <tbody>${[...D.clients].sort((a,b)=>daysTo(a.corte)-daysTo(b.corte)).map(c=>`<tr onclick="openCliM('${c.id}')">
-          <td><b>${c.nombre}</b></td>
+        <tbody>${[...D.clients].sort((a,b)=>daysTo(a.corte)-daysTo(b.corte)).map(c=>`<tr onclick="openFicha('${c.id}')">
+          <td><span class="cdot" style="background:${cColor(c)}"></span><b>${esc(c.nombre)}</b>${pendBadge(c.id)}</td>
           <td>${sbadge(c.tipo)}</td>
           <td>$${fmt(c.monto)}</td>
           <td>Día ${c.corte}</td>
@@ -519,8 +655,8 @@ function rClientes(){
     </div>
     <div class="card"><div class="tw"><table>
       <thead><tr><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Corte</th><th>Pago</th><th>Próx. corte</th><th>Estado</th><th>Recibo</th></tr></thead>
-      <tbody>${list.map(c=>`<tr onclick="openCliM('${c.id}')">
-        <td><b>${c.nombre}</b></td>
+      <tbody>${list.map(c=>`<tr onclick="openFicha('${c.id}')">
+        <td><span class="cdot" style="background:${cColor(c)}"></span><b>${esc(c.nombre)}</b>${pendBadge(c.id)}</td>
         <td>${sbadge(c.tipo)}</td>
         <td>$${fmt(c.monto)}</td>
         <td>Día ${c.corte}</td>
@@ -587,7 +723,7 @@ function rRecibos(){
       <div class="cli-grid">
         ${[...D.clients].sort((a,b)=>daysTo(a.corte)-daysTo(b.corte)).map(c=>`
           <div class="cli-card" onclick="abrirRecibo('${c.id}')">
-            <div style="font-size:13px;font-weight:700;margin-bottom:4px">${c.nombre}</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px"><span class="cdot" style="background:${cColor(c)}"></span>${esc(c.nombre)}</div>
             <div style="font-size:12px;color:#888;margin-bottom:8px">$${fmt(c.monto)}/mes · Día ${c.corte}</div>
             <div style="display:flex;justify-content:space-between;align-items:center">
               ${sbadge(c.tipo)}
@@ -611,13 +747,15 @@ function openCliM(id){
   document.getElementById('c-est').value=c?.estado||'activo';
   document.getElementById('c-email').value=c?.email||'';
   document.getElementById('c-notas').value=c?.notas||'';
+  document.getElementById('c-debe').value=c?.debe||'';
+  selColor=c?cColor(c):nextColor();drawSwatches();
   document.getElementById('c-del').style.display=c?'block':'none';
   document.getElementById('m-cli').classList.add('op');
 }
 function saveClient(){
   const nom=document.getElementById('c-nom').value.trim();
   if(!nom){toast('Ingresa un nombre');return;}
-  const d={nombre:nom,tipo:document.getElementById('c-tipo').value,monto:+document.getElementById('c-monto').value||0,corte:+document.getElementById('c-corte').value||1,pago:+document.getElementById('c-pago').value||1,estado:document.getElementById('c-est').value,email:document.getElementById('c-email').value.trim(),notas:document.getElementById('c-notas').value.trim()};
+  const d={nombre:nom,tipo:document.getElementById('c-tipo').value,monto:+document.getElementById('c-monto').value||0,corte:+document.getElementById('c-corte').value||1,pago:+document.getElementById('c-pago').value||1,estado:document.getElementById('c-est').value,email:document.getElementById('c-email').value.trim(),notas:document.getElementById('c-notas').value.trim(),debe:+document.getElementById('c-debe').value||0,color:selColor};
   const p=editCliId?db.collection('clientes').doc(editCliId).update(d):db.collection('clientes').add(d);
   p.then(()=>{closeM('m-cli');toast(editCliId?'Cliente actualizado ✓':'Cliente agregado ✓');}).catch(e=>toast('Error: '+e.message));
 }
@@ -826,12 +964,247 @@ function copyReciboWA(){
 // EXCEL
 function exportXls(){
   if(!D.clients.length){toast('Sin datos');return;}
-  const rows=D.clients.map(c=>({'Nombre':c.nombre,'Sector':SECT[c.tipo]?.label||c.tipo,'Monto':c.monto,'Día corte':c.corte,'Día pago':c.pago,'Estado':c.estado||'activo','Email':c.email||'','Notas':c.notas||'','Próx. corte (días)':daysTo(c.corte)}));
+  const rows=D.clients.map(c=>({'Nombre':c.nombre,'Sector':SECT[c.tipo]?.label||c.tipo,'Monto':c.monto,'Día corte':c.corte,'Día pago':c.pago,'Estado':c.estado||'activo','Email':c.email||'','Notas':c.notas||'','Saldo pendiente':c.debe||0,'Pendientes abiertos':openPends(c.id).length,'Próx. corte (días)':daysTo(c.corte)}));
   const ws=XLSX.utils.json_to_sheet(rows);
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Clientes');
+  if(PENDS.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([...PENDS].sort(pSort).map(p=>({'Cliente':(cById(p.clienteId)||{}).nombre||'','Tipo':(TIPOS[p.tipo]||TIPOS.general).s,'Pendiente':p.titulo,'Cantidad':p.cant||1,'Fecha':p.fecha,'Hora':p.hora||'','Estado':(ESTADOS[p.estado]||{}).l||p.estado,'Responsable':p.responsable||'','Link':p.link||''}))),'Pendientes');
   XLSX.writeFile(wb,'clientes-corte-'+todayStr()+'.xlsx');
   toast('Excel descargado ✓');
+}
+
+
+// ===================== COMMUNITY =====================
+var PENDS=[], EQUIPO=[];
+function sinAcceso(){
+  stopFB();document.getElementById('app').style.display='none';document.getElementById('auth').style.display='flex';
+  const er=document.getElementById('aerr');er.textContent='Tu usuario ('+(USER?USER.email:'')+') todavía no tiene acceso. Pídele a gerencia que te agregue al equipo.';er.style.display='block';
+  auth.signOut();
+}
+function addEquipo(){
+  const em=(document.getElementById('eq-email').value||'').trim().toLowerCase();const nom=(document.getElementById('eq-nom').value||'').trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast('Escribe un correo válido');return;}
+  db.collection('equipo').doc(em).set({nombre:nom,agregadoPor:USER?USER.email:'',agregadoEn:firebase.firestore.FieldValue.serverTimestamp()}).then(()=>toast('Acceso dado a '+em+' ✓')).catch(e=>toast('Error: '+e.message));
+}
+function delEquipo(em){if(!confirm('¿Quitar el acceso de '+em+'?'))return;db.collection('equipo').doc(em).delete().then(()=>toast('Acceso quitado')).catch(e=>toast('Error: '+e.message));}
+function equipoCard(){
+  return `<div class="card" style="margin-top:14px"><div class="card-h"><span class="card-t">👥 Equipo con acceso</span></div>
+    <p style="font-size:12px;color:#888;margin:-6px 0 12px">Cada persona necesita un usuario en Firebase (Authentication) con este mismo correo. Aquí decides quién puede entrar. Gerencia (${GERENCIA.join(', ')}) siempre tiene acceso y es la única que ve Rentabilidad.</p>
+    ${EQUIPO.map(e=>`<div class="prow"><div class="main"><div class="t">${esc(e.nombre||e.id)}</div><div class="s">${esc(e.id)}</div></div><button class="btn btn-sm" style="color:#c0392b" onclick="delEquipo('${esc(e.id)}')">Quitar acceso</button></div>`).join('')||'<p class="empty">Todavía no hay nadie del equipo agregado.</p>'}
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><input class="fi" id="eq-nom" placeholder="Nombre (ej: Mafe)" style="max-width:180px"><input class="fi" id="eq-email" placeholder="correo@gmail.com" style="max-width:240px"><button class="btn btn-dark btn-sm" onclick="addEquipo()">Dar acceso</button></div></div>`;
+}
+var PALETA=['#E11D48','#F97316','#EAB308','#84CC16','#10B981','#14B8A6','#06B6D4','#3B82F6','#6366F1','#8B5CF6','#D946EF','#EC4899','#A16207','#64748B','#0F766E','#9F1239'];
+var TIPOS={
+  video:{l:'Videos editados',s:'Video',i:'🎬'},
+  post:{l:'Publicaciones',s:'Publicación',i:'🖼️'},
+  historia:{l:'Historias',s:'Historia',i:'📱'},
+  portada:{l:'Portadas de reels',s:'Portada',i:'🎞️'},
+  anuncio:{l:'Anuncios',s:'Anuncio',i:'📣'},
+  general:{l:'Pendientes generales',s:'General',i:'📌'}
+};
+var ESTADOS={pendiente:{l:'Pendiente',c:'e-p'},cliente:{l:'Por cliente',c:'e-c'},hecho:{l:'Realizado',c:'e-h'}};
+var selColor=PALETA[0], editPendId=null, fichaId=null, fichaTab='cobros', metasCliId=null;
+var comCli='all', comY=NOW.getFullYear(), comM=NOW.getMonth(), comEst='abiertos';
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+function sortedClients(){return [...D.clients].sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),'es'));}
+function cColor(c){if(c&&c.color)return c.color;const i=sortedClients().findIndex(x=>x.id===(c&&c.id));return PALETA[(i<0?0:i)%PALETA.length];}
+function cById(id){return D.clients.find(c=>c.id===id);}
+function nextColor(){const used=new Set(D.clients.map(c=>c.color).filter(Boolean));return PALETA.find(p=>!used.has(p))||PALETA[D.clients.length%PALETA.length];}
+var colorsSynced=false;
+function syncColors(){
+  if(colorsSynced)return;colorsSynced=true;
+  const ops=[];const used=new Set(D.clients.map(c=>c.color).filter(Boolean));
+  sortedClients().forEach(c=>{if(!c.color){const col=PALETA.find(p=>!used.has(p))||PALETA[used.size%PALETA.length];used.add(col);ops.push(db.collection('clientes').doc(c.id).update({color:col}));}});
+  if(ops.length)Promise.all(ops).catch(e=>console.error(e));
+}
+function drawSwatches(){
+  const el=document.getElementById('c-colors');if(!el)return;
+  el.innerHTML=PALETA.map(p=>`<span class="sw${p===selColor?' on':''}" style="background:${p}" onclick="selColor='${p}';drawSwatches()"></span>`).join('')+
+    `<input type="color" value="${selColor}" onchange="selColor=this.value;drawSwatches()" style="width:30px;height:28px;border:none;background:none;cursor:pointer" title="Otro color">`;
+}
+function tint(hex,a){const h=hex.replace('#','');const n=parseInt(h.length===3?h.split('').map(x=>x+x).join(''):h,16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function mesKey(y,m){return y+'-'+String(m+1).padStart(2,'0');}
+function fFecha(f){if(!f)return 'Sin fecha';const d=new Date(f+'T12:00:00');return d.toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});}
+function fHora(h){if(!h)return '';const [H,M]=h.split(':').map(Number);return ((H%12)||12)+':'+String(M).padStart(2,'0')+(H<12?' am':' pm');}
+function isLate(p){return p.estado!=='hecho'&&p.fecha&&p.fecha<todayStr();}
+function pSort(a,b){return (a.fecha||'9999').localeCompare(b.fecha||'9999')||(a.hora||'99').localeCompare(b.hora||'99');}
+function openPends(cid){return PENDS.filter(p=>p.clienteId===cid&&p.estado!=='hecho');}
+function pendBadge(cid){const o=openPends(cid);if(!o.length)return '';const late=o.filter(isLate).length;return ` <span class="badge ${late?'b-urg':'b-pend'}" style="margin-left:6px">${o.length} pend.${late?' · '+late+' atras.':''}</span>`;}
+function progreso(c,y,m){
+  const k=mesKey(y,m),metas=(c.metas&&c.metas[k])||{};
+  return Object.keys(TIPOS).filter(t=>t!=='general').map(t=>{
+    const hechos=PENDS.filter(p=>p.clienteId===c.id&&p.tipo===t&&p.estado==='hecho'&&(p.fecha||'').startsWith(k)).reduce((s,p)=>s+(+p.cant||1),0);
+    return {t,meta:+metas[t]||0,hechos};
+  });
+}
+function metaBars(c,y,m){
+  const rows=progreso(c,y,m);
+  return rows.map(r=>{const pct=r.meta?Math.min(100,Math.round(r.hechos/r.meta*100)):(r.hechos?100:0);const col=r.meta&&r.hechos>=r.meta?'#2d6a11':cColor(c);
+    return `<div class="meta-row"><span class="lb">${TIPOS[r.t].i} ${TIPOS[r.t].l}</span><div class="sec-bar"><div class="sec-fill" style="width:${pct}%;background:${col}"></div></div><span class="nm">${r.hechos}${r.meta?'/'+r.meta:''}</span></div>`;}).join('');
+}
+function estBtns(p){return `<div class="est">${Object.entries(ESTADOS).map(([k,v])=>`<button class="${v.c}${p.estado===k?' on':''}" onclick="event.stopPropagation();setEst('${p.id}','${k}')">${v.l}</button>`).join('')}</div>`;}
+function pRow(p,showCli){
+  const c=cById(p.clienteId);const t=TIPOS[p.tipo]||TIPOS.general;
+  return `<div class="prow${p.estado==='hecho'?' done':''}">
+    <span class="cdot" style="background:${cColor(c)}"></span>
+    <div class="main" onclick="openPend('${p.id}')">
+      <div class="t">${t.i} ${esc(p.titulo)}${(+p.cant||1)>1?' ×'+p.cant:''}</div>
+      <div class="s">${showCli&&c?esc(c.nombre)+' · ':''}<span style="${isLate(p)?'color:#e74c3c;font-weight:700':''}">${fFecha(p.fecha)}${p.hora?' · '+fHora(p.hora):''}${isLate(p)?' · atrasado':''}</span>${p.responsable?' · '+esc(p.responsable):''}${p.link?` · <a href="${esc(p.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">material</a>`:''}</div>
+    </div>${estBtns(p)}</div>`;
+}
+function setEst(id,est){
+  const p=PENDS.find(x=>x.id===id);if(p)p.estado=est;render();refreshFicha();
+  db.collection('pendientes').doc(id).update({estado:est,actualizadoPor:USER?USER.email:'',actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()})
+    .then(()=>toast(est==='hecho'?'Marcado como realizado ✓':est==='cliente'?'Pendiente por cliente':'Marcado como pendiente'))
+    .catch(e=>toast('Error: '+e.message));
+}
+function toggleHecho(id){const p=PENDS.find(x=>x.id===id);if(!p)return;setEst(id,p.estado==='hecho'?'pendiente':'hecho');}
+
+function pevHtml(p){const c=cById(p.clienteId);const col=cColor(c);
+  return `<div class="pev${p.estado==='hecho'?' done':''}${isLate(p)?' late':''}${p.estado==='cliente'?' wait':''}" style="background:${tint(col,.16)};border-left-color:${col}" title="${esc((c?c.nombre:'')+' · '+p.titulo+(p.hora?' · '+fHora(p.hora):''))}" onclick="openPend('${p.id}')">
+    <span class="ck" onclick="event.stopPropagation();toggleHecho('${p.id}')">${p.estado==='hecho'?'✓':''}</span><span class="tx">${c?esc(c.nombre)+' · ':''}${esc(p.titulo)}${p.hora?' · '+fHora(p.hora):''}${p.estado==='cliente'?' · por cliente':''}</span></div>`;}
+function rCommunity(){
+  const hoy=todayStr();
+  const semana=ymd(new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()+7));
+  const flt=p=>comCli==='all'||p.clienteId===comCli;
+  const abiertos=PENDS.filter(p=>p.estado!=='hecho'&&flt(p)).sort(pSort);
+  const atras=abiertos.filter(isLate), deHoy=abiertos.filter(p=>p.fecha===hoy), prox=abiertos.filter(p=>p.fecha>hoy&&p.fecha<=semana);
+  const porCli=abiertos.filter(p=>p.estado==='cliente');
+  // calendario
+  const first=new Date(comY,comM,1).getDay(),days=new Date(comY,comM+1,0).getDate(),off=first===0?6:first-1;
+  const k=mesKey(comY,comM);
+  const evs={};PENDS.filter(p=>flt(p)&&(p.fecha||'').startsWith(k)).sort(pSort).forEach(p=>{const d=+p.fecha.slice(8,10);(evs[d]=evs[d]||[]).push(p);});
+  let cells='';for(let i=0;i<off;i++)cells+='<div class="cal-cell oth"></div>';
+  for(let d=1;d<=days;d++){
+    const ds=k+'-'+String(d).padStart(2,'0');
+    cells+=`<div class="cal-cell${ds===hoy?' today':''}" ondblclick="openPend(null,'${ds}')"><div class="cal-num">${d}</div>${(evs[d]||[]).map(pevHtml).join('')}</div>`;
+  }
+  const sec=(tit,col,list,emptyTxt)=>`<div class="card"><div class="card-h"><span class="card-t" style="color:${col}">${tit}</span><span style="font-size:12px;color:#888">${list.length}</span></div>${list.map(p=>pRow(p,true)).join('')||`<p class="empty">${emptyTxt}</p>`}</div>`;
+  document.getElementById('panel-community').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <div style="font-size:13px;color:#666">Toca un cliente para ver su panel. Chulea ☑ un pendiente para marcarlo como realizado.</div>
+      <button class="btn btn-dark btn-sm" onclick="openPend(null,null,comCli!=='all'?comCli:null)">+ Pendiente</button>
+    </div>
+    <div class="chips">
+      <span class="chip${comCli==='all'?' on':''}" onclick="comCli='all';rCommunity()">Todos</span>
+      ${sortedClients().map(c=>{const n=openPends(c.id).length;return `<span class="chip${comCli===c.id?' on':''}" onclick="comCli='${c.id}';rCommunity()" ondblclick="openFicha('${c.id}','community')"><span class="cdot" style="background:${cColor(c)};margin:0"></span>${esc(c.nombre)}${n?` <span style="opacity:.6">${n}</span>`:''}</span>`;}).join('')}
+    </div>
+    ${comCli!=='all'&&cById(comCli)?`<div class="card"><div class="card-h"><span class="card-t"><span class="cdot" style="background:${cColor(cById(comCli))}"></span>${esc(cById(comCli).nombre)} · metas de ${MN[comM]}</span><span style="display:flex;gap:6px"><button class="btn btn-sm" onclick="openMetas('${comCli}')">Editar metas</button><button class="btn btn-sm btn-dark" onclick="openFicha('${comCli}','community')">Abrir panel</button></span></div>${metaBars(cById(comCli),comY,comM)}</div>`:''}
+    <div class="metrics">
+      <div class="metric"><div class="m-lbl">Atrasados</div><div class="m-val" style="color:#e74c3c">${atras.length}</div></div>
+      <div class="metric"><div class="m-lbl">Para hoy</div><div class="m-val" style="color:#b45309">${deHoy.length}</div></div>
+      <div class="metric"><div class="m-lbl">Próximos 7 días</div><div class="m-val" style="color:#1d4ed8">${prox.length}</div></div>
+      <div class="metric"><div class="m-lbl">Esperando al cliente</div><div class="m-val" style="color:#92400e">${porCli.length}</div></div>
+    </div>
+    <div class="card">
+      <div class="cal-nav">
+        <button class="btn btn-sm" onclick="comM--;if(comM<0){comM=11;comY--;}rCommunity()">‹ Anterior</button>
+        <span style="font-size:15px;font-weight:700">${MN[comM]} ${comY}</span>
+        <button class="btn btn-sm" onclick="comM++;if(comM>11){comM=0;comY++;}rCommunity()">Siguiente ›</button>
+      </div>
+      <div style="display:flex;gap:14px;margin-bottom:10px;font-size:11px;color:#888;flex-wrap:wrap"><span>☑ chulear = realizado</span><span style="color:#e74c3c">▢ borde rojo = atrasado</span><span>Doble clic en un día = nuevo pendiente</span></div>
+      <div class="cal-g pcal">${['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>`<div class="cal-dl">${d}</div>`).join('')}${cells}</div>
+      <div class="pagenda">${Object.keys(evs).sort((a,b)=>a-b).map(d=>{const ds=k+'-'+String(d).padStart(2,'0');return `<div class="dia${ds===hoy?' hoy':''}">${ds===hoy?'Hoy · ':''}${fFecha(ds)}</div>`+evs[d].map(pevHtml).join('');}).join('')||'<p class="empty">Sin pendientes este mes</p>'}</div>
+    </div>
+    ${sec('🔴 Atrasados','#e74c3c',atras,'Nada atrasado ✅')}
+    ${sec('🟠 Para hoy','#b45309',deHoy,'Nada para hoy')}
+    ${sec('🔵 Próximos 7 días','#1d4ed8',prox,'Nada programado esta semana')}
+    ${sec('🟡 Esperando al cliente','#92400e',porCli,'Nada esperando al cliente')}`;
+}
+
+// ---------- FICHA DEL CLIENTE ----------
+function openFicha(id,tab){fichaId=id;fichaTab=tab||'cobros';drawFicha();document.getElementById('m-ficha').classList.add('op');}
+function refreshFicha(){if(fichaId&&document.getElementById('m-ficha').classList.contains('op'))drawFicha();}
+function drawFicha(){
+  const c=cById(fichaId);const el=document.getElementById('ficha-body');
+  if(!c){el.innerHTML='<p class="empty">Cliente no encontrado</p>';return;}
+  const col=cColor(c);const ps=PENDS.filter(p=>p.clienteId===c.id).sort(pSort);
+  const abiertos=ps.filter(p=>p.estado!=='hecho'), hechos=ps.filter(p=>p.estado==='hecho').reverse().slice(0,15);
+  const dc=daysTo(c.corte);
+  const cobros=`
+    <div class="kv">
+      <div><div class="k">Valor mensual</div><div class="v">$${fmt(c.monto)}</div></div>
+      <div><div class="k">Saldo pendiente</div><div class="v" style="color:${(+c.debe||0)>0?'#c0392b':'#2d6a11'}">$${fmt(c.debe||0)}</div></div>
+      <div><div class="k">Día de corte / pago</div><div class="v">Día ${c.corte} / Día ${c.pago||c.corte}</div></div>
+      <div><div class="k">Próximo corte</div><div class="v" style="color:${dc<=3?'#e74c3c':dc<=7?'#b45309':'#2d6a11'}">${dc===0?'¡Hoy!':'en '+dc+' días'}</div></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+      <span class="badge ${EST_B[c.estado]||'b-ok'}">${c.estado||'activo'}</span>${sbadge(c.tipo)}
+      ${c.email?`<span style="font-size:12px;color:#888">${esc(c.email)}</span>`:''}
+    </div>
+    ${c.notas?`<p style="font-size:12px;color:#666;margin:8px 0">${esc(c.notas)}</p>`:''}
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn btn-dark btn-sm" onclick="closeM('m-ficha');abrirRecibo('${c.id}')">🧾 Generar cuenta de cobro</button>
+      <button class="btn btn-sm" onclick="closeM('m-ficha');openCliM('${c.id}')">✏️ Editar datos y color</button>
+    </div>`;
+  const community=`
+    <div class="card" style="padding:14px 16px">
+      <div class="card-h" style="margin-bottom:10px"><span class="card-t">Metas de ${MN[NOW.getMonth()]}</span><button class="btn btn-sm" onclick="openMetas('${c.id}')">Editar metas</button></div>
+      ${metaBars(c,NOW.getFullYear(),NOW.getMonth())}
+    </div>
+    <div class="card-h"><span class="card-t">Pendientes abiertos (${abiertos.length})</span><button class="btn btn-dark btn-sm" onclick="openPend(null,null,'${c.id}')">+ Pendiente</button></div>
+    ${abiertos.map(p=>pRow(p,false)).join('')||'<p class="empty">Sin pendientes abiertos ✅</p>'}
+    ${hechos.length?`<div class="card-t" style="margin:16px 0 4px;color:#2d6a11">Realizados recientes</div>${hechos.map(p=>pRow(p,false)).join('')}`:''}`;
+  el.innerHTML=`
+    <div class="fic-h"><div class="av" style="background:${col}"></div><div><h2 style="margin:0">${esc(c.nombre)}</h2><div style="font-size:12px;color:#888">${abiertos.length} pendientes abiertos${abiertos.filter(isLate).length?' · <b style="color:#e74c3c">'+abiertos.filter(isLate).length+' atrasados</b>':''}</div></div></div>
+    <div class="ftabs"><div class="ftab${fichaTab==='cobros'?' on':''}" onclick="fichaTab='cobros';drawFicha()">💵 Cobros</div><div class="ftab${fichaTab==='community'?' on':''}" onclick="fichaTab='community';drawFicha()">📋 Community</div></div>
+    ${fichaTab==='cobros'?cobros:community}`;
+}
+
+// ---------- PENDIENTE CRUD ----------
+function openPend(id,fecha,cliId){
+  editPendId=id||null;const p=id?PENDS.find(x=>x.id===id):null;
+  document.getElementById('mp-h').textContent=p?'Editar pendiente':'Nuevo pendiente';
+  document.getElementById('p-cli').innerHTML=sortedClients().map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+  document.getElementById('p-tipo').innerHTML=Object.entries(TIPOS).map(([k,v])=>`<option value="${k}">${v.i} ${v.s}</option>`).join('');
+  document.getElementById('p-cli').value=p?p.clienteId:(cliId||(comCli!=='all'?comCli:(sortedClients()[0]||{}).id||''));
+  document.getElementById('p-tipo').value=p?.tipo||'general';
+  document.getElementById('p-cant').value=p?.cant||1;
+  document.getElementById('p-tit').value=p?.titulo||'';
+  document.getElementById('p-fecha').value=p?.fecha||fecha||todayStr();
+  document.getElementById('p-hora').value=p?.hora||'';
+  document.getElementById('p-est').value=p?.estado||'pendiente';
+  document.getElementById('p-resp').value=p?.responsable||'';
+  document.getElementById('p-link').value=p?.link||'';
+  document.getElementById('p-notas').value=p?.notas||'';
+  const ts=p&&p.actualizadoEn&&p.actualizadoEn.toDate?p.actualizadoEn.toDate().toLocaleString('es-CO',{dateStyle:'medium',timeStyle:'short'}):'';
+  document.getElementById('p-audit').textContent=p&&p.actualizadoPor?'Último cambio: '+p.actualizadoPor+(ts?' · '+ts:''):(p&&p.creadoPor?'Creado por '+p.creadoPor:'');
+  document.getElementById('p-del').style.display=p?'block':'none';
+  document.getElementById('m-pend').classList.add('op');
+}
+function savePend(){
+  const tit=document.getElementById('p-tit').value.trim();
+  if(!tit){toast('Escribe el pendiente');return;}
+  const cli=document.getElementById('p-cli').value;if(!cli){toast('Elige un cliente');return;}
+  const d={clienteId:cli,tipo:document.getElementById('p-tipo').value,cant:Math.max(1,+document.getElementById('p-cant').value||1),titulo:tit,
+    fecha:document.getElementById('p-fecha').value||todayStr(),hora:document.getElementById('p-hora').value||'',estado:document.getElementById('p-est').value,
+    responsable:document.getElementById('p-resp').value.trim(),link:document.getElementById('p-link').value.trim(),notas:document.getElementById('p-notas').value.trim(),
+    actualizadoPor:USER?USER.email:'',actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()};
+  if(d.link&&!/^https?:\/\//i.test(d.link))d.link='https://'+d.link;
+  const pr=editPendId?db.collection('pendientes').doc(editPendId).update(d):db.collection('pendientes').add({...d,creadoPor:USER?USER.email:'',creadoEn:firebase.firestore.FieldValue.serverTimestamp()});
+  pr.then(()=>{closeM('m-pend');toast(editPendId?'Pendiente actualizado ✓':'Pendiente creado ✓');}).catch(e=>toast('Error: '+e.message));
+}
+function delPend(){
+  if(!editPendId||!confirm('¿Eliminar este pendiente?'))return;
+  db.collection('pendientes').doc(editPendId).delete().then(()=>{closeM('m-pend');toast('Pendiente eliminado');}).catch(e=>toast('Error: '+e.message));
+}
+
+// ---------- METAS ----------
+function openMetas(id){
+  metasCliId=id;const c=cById(id);if(!c)return;
+  const y=comCli===id?comY:NOW.getFullYear(), m=comCli===id?comM:NOW.getMonth(), k=mesKey(y,m);
+  const mt=(c.metas&&c.metas[k])||{};
+  document.getElementById('mm-h').textContent='Metas de '+MN[m]+' '+y+' · '+c.nombre;
+  document.getElementById('mm-body').dataset.k=k;
+  document.getElementById('mm-body').innerHTML=Object.entries(TIPOS).filter(([t])=>t!=='general').map(([t,v])=>`<div class="fg" style="grid-template-columns:2fr 1fr;align-items:center"><div class="flbl" style="margin:0">${v.i} ${v.l}</div><input class="fi" type="number" min="0" data-meta="${t}" value="${mt[t]||''}" placeholder="0"></div>`).join('');
+  document.getElementById('m-metas').classList.add('op');
+}
+function saveMetas(){
+  const k=document.getElementById('mm-body').dataset.k;const v={};
+  document.querySelectorAll('[data-meta]').forEach(i=>{v[i.dataset.meta]=Math.max(0,+i.value||0);});
+  db.collection('clientes').doc(metasCliId).update({['metas.'+k]:v}).then(()=>{closeM('m-metas');toast('Metas guardadas ✓');}).catch(e=>toast('Error: '+e.message));
 }
 
 // MODALS
